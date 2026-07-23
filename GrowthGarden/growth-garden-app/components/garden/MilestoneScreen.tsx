@@ -21,8 +21,8 @@ export function MilestoneScreen({ streakCount, plantStage, onContinue }: Milesto
   const copy = milestoneCopy[streakCount] || `${streakCount} days of showing up for yourself.`;
   const variant = getRareVariant(streakCount);
 
-  const bgColor = streakCount >= 100 ? '#0a0618' :
-    streakCount >= 30 ? '#0d0820' : '#081210';
+  const bgColor = streakCount >= 100 ? '#faf5fc' :
+    streakCount >= 30 ? '#f5f0fa' : '#f0f8f2';
 
   return (
     <motion.div
@@ -51,7 +51,7 @@ export function MilestoneScreen({ streakCount, plantStage, onContinue }: Milesto
       {Array.from({ length: 12 }).map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-1 h-1 rounded-full bg-[#c0a0ff]"
+          className="absolute w-1 h-1 rounded-full bg-[#9060e8]"
           style={{
             top: `${30 + Math.sin(i * 0.52) * 20}%`,
             left: `${50 + Math.cos(i * 0.52) * 30}%`,
@@ -63,7 +63,7 @@ export function MilestoneScreen({ streakCount, plantStage, onContinue }: Milesto
 
       {/* Copy */}
       <motion.p
-        className="text-xl md:text-2xl text-center text-[#e0e6f0] font-light max-w-md leading-relaxed"
+        className="text-xl md:text-2xl text-center text-[#1F2A1F] font-light max-w-md leading-relaxed"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8, duration: 0.8 }}
@@ -74,7 +74,7 @@ export function MilestoneScreen({ streakCount, plantStage, onContinue }: Milesto
       {/* Continue button */}
       <motion.button
         onClick={onContinue}
-        className="mt-12 px-6 py-3 rounded-lg border border-[#252a38] text-[#8b95a8] hover:text-[#e0e6f0] hover:border-[#4a8a50] transition-colors text-sm"
+        className="mt-12 px-6 py-3 rounded-lg border border-[#e2e5da] text-[#6b7a6b] hover:text-[#1F2A1F] hover:border-[#4A7C59] transition-colors text-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}

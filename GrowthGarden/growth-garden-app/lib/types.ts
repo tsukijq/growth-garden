@@ -226,6 +226,9 @@ export enum ErrorCode {
   /** User attempted to send a friend request to themselves */
   SELF_REQUEST = 'SELF_REQUEST',
 
+  /** Attempt to record a completion on a day not in the habit's schedule */
+  NOT_SCHEDULED_DAY = 'NOT_SCHEDULED_DAY',
+
   /** Generic validation failure (form input, constraints) */
   VALIDATION_ERROR = 'VALIDATION_ERROR',
 }
@@ -236,6 +239,18 @@ export enum ErrorCode {
 export interface ActionError {
   code: ErrorCode;
   message: string;
+}
+
+/**
+ * Result of a completion recording operation.
+ */
+export interface CompletionResult {
+  success: boolean;
+  error?: ActionError;
+  completion?: Completion;
+  newStreak?: number;
+  growthStage?: GrowthStage;
+  rareFlowerUnlock?: RareFlowerUnlock | null;
 }
 
 // -----------------------------------------------------------------------------

@@ -1,87 +1,79 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { login } from '@/lib/actions/auth';
+import { AuthResult } from '@/lib/types';
+
+const initialState: AuthResult = { success: false };
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, formAction, isPending] = useActionState(login, initialState);
   const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (authError) {
-      setError('Invalid email or password combination.');
-      setLoading(false);
-      return;
+  useEffect(() => {
+    if (state.success) {
+      router.push('/garden');
     }
-
-    router.push('/garden');
-  }
+  }, [state.success, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6 bg-[#f7f9f4]">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
-        <p className="text-[#8b95a8] text-sm mb-8">Your garden is waiting.</p>
+        <h1 className="text-2xl font-bold mb-2 text-[#1F2A1F]">Welcome back</h1>
+        <p className="text-[#6b7a6b] text-sm mb-8">Your garden is waiting.</p>
 
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <form action={formAction} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="login-email" className="text-xs text-[#8b95a8] mb-1 block">Email</label>
+            <label htmlFor="login-email" className="text-xs text-[#6b7a6b] mb-1 block">
+              Email
+            </label>
             <input
               id="login-email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 bg-[#141820] border border-[#252a38] rounded-lg text-[#e0e6f0] focus:outline-none focus:border-[#4a8a50] transition-colors"
+              aria-describedby={state.error ? 'login-error' : undefined}
+              className="w-full px-4 py-3 bg-white border border-[#e2e5da] rounded-lg text-[#1F2A1F] focus:outline-none focus:ring-2 focus:ring-[#4A7C59]/30 focus:border-[#4A7C59] transition-colors"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="login-password" className="text-xs text-[#8b95a8] mb-1 block">Password</label>
+            <label htmlFor="login-password" className="text-xs text-[#6b7a6b] mb-1 block">
+              Password
+            </label>
             <input
               id="login-password"
+              name="password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full px-4 py-3 bg-[#141820] border border-[#252a38] rounded-lg text-[#e0e6f0] focus:outline-none focus:border-[#4a8a50] transition-colors"
+              aria-describedby={state.error ? 'login-error' : undefined}
+              className="w-full px-4 py-3 bg-white border border-[#e2e5da] rounded-lg text-[#1F2A1F] focus:outline-none focus:ring-2 focus:ring-[#4A7C59]/30 focus:border-[#4A7C59] transition-colors"
               placeholder="At least 8 characters"
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-[#c05030]">{error}</p>
+          {state.error && (
+            <p id="login-error" role="alert" className="text-sm text-[#c44030]">
+              {state.error}
+            </p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3 rounded-lg bg-[#4a8a50] text-white font-medium hover:bg-[#5a9a60] transition-colors disabled:opacity-50"
+            disabled={isPending}
+            className="w-full py-3 rounded-lg bg-[#4A7C59] text-white font-medium hover:bg-[#3d6b4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {isPending ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
-        <p className="text-sm text-[#8b95a8] text-center mt-6">
+        <p className="text-sm text-[#6b7a6b] text-center mt-6">
           No account yet?{' '}
-          <Link href="/signup" className="text-[#6ee7a0] hover:underline">
+          <Link href="/signup" className="text-[#4A7C59] hover:underline font-medium">
             Start growing
           </Link>
         </p>

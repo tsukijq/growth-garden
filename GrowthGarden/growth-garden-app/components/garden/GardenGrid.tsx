@@ -23,8 +23,11 @@ export function GardenGrid({ habits, readOnly, onWater, onRelease, onViewJournal
             <ellipse cx="50" cy="75" rx="5" ry="3" fill="#8b6914" opacity="0.5" />
           </svg>
         </div>
-        <p className="text-[#8b95a8] text-sm">Your garden is empty.</p>
-        <p className="text-[#8b95a8] text-xs mt-1">Every great garden starts with one seed — what do you want to grow?</p>
+        <p className="text-[#1F2A1F] text-sm font-medium">Your garden is waiting</p>
+        <p className="text-[#6b7a6b] text-xs mt-1 max-w-[240px]">
+          Tap <span className="font-medium text-[#4A7C59]">+ Plant seed</span> above to grow your first habit.
+          Every great garden starts with one seed.
+        </p>
       </div>
     );
   }

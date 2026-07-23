@@ -15,16 +15,20 @@ interface MarkDoneButtonProps {
 export function MarkDoneButton({ habit, isCompleted, onComplete }: MarkDoneButtonProps) {
   const [loading, setLoading] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const resting = isRestDay(habit.rest_days || []);
 
   async function handleMarkDone() {
     if (isCompleted || loading || resting) return;
     setLoading(true);
+    setError(null);
 
     const result = await markHabitDone(habit.id);
     if ('error' in result) {
+      setError(result.error);
       setLoading(false);
+      setTimeout(() => setError(null), 3000);
       return;
     }
 
@@ -39,11 +43,11 @@ export function MarkDoneButton({ habit, isCompleted, onComplete }: MarkDoneButto
   // Rest day display
   if (resting && !isCompleted) {
     return (
-      <div className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[#141820] border border-[#252a38]">
+      <div className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[#ffffff] border border-[#e2e5da]">
         <span className="text-lg">🌙</span>
         <div>
-          <span className="text-sm text-[#e0e6f0]">{habit.plant_name || habit.name}</span>
-          <p className="text-[10px] text-[#8b95a8]">Rest day. Your plant is okay.</p>
+          <span className="text-sm text-[#1F2A1F]">{habit.plant_name || habit.name}</span>
+          <p className="text-[10px] text-[#6b7a6b]">Rest day. Your plant is okay.</p>
         </div>
       </div>
     );
@@ -57,8 +61,8 @@ export function MarkDoneButton({ habit, isCompleted, onComplete }: MarkDoneButto
         relative flex items-center gap-3 w-full px-4 py-3 rounded-lg
         transition-colors duration-200
         ${isCompleted
-          ? 'bg-[#1a2420] border border-[#2a4a35]'
-          : 'bg-[#141820] border border-[#252a38] hover:border-[#4a8a50]'
+          ? 'bg-[#f0f5f1] border border-[#c8e0cc]'
+          : 'bg-[#ffffff] border border-[#e2e5da] hover:border-[#4A7C59]'
         }
       `}
       whileTap={!isCompleted ? { scale: 0.97 } : {}}
@@ -66,11 +70,11 @@ export function MarkDoneButton({ habit, isCompleted, onComplete }: MarkDoneButto
       {/* Checkbox circle */}
       <motion.div
         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0
-          ${isCompleted ? 'border-[#4a8a50] bg-[#4a8a50]' : 'border-[#8b95a8]'}
+          ${isCompleted ? 'border-[#4A7C59] bg-[#4A7C59]' : 'border-[#6b7a6b]'}
         `}
         animate={justCompleted ? {
           scale: [1, 1.3, 1],
-          borderColor: ['#8b95a8', '#6ee7a0', '#4a8a50'],
+          borderColor: ['#6b7a6b', '#4A7C59', '#4A7C59'],
         } : {}}
         transition={{ duration: 0.4 }}
       >
@@ -96,13 +100,13 @@ export function MarkDoneButton({ habit, isCompleted, onComplete }: MarkDoneButto
 
       {/* Habit name */}
       <div className="flex flex-col items-start min-w-0">
-        <span className={`text-sm truncate ${isCompleted ? 'text-[#6ee7a0]' : 'text-[#e0e6f0]'}`}>
+        <span className={`text-sm truncate ${isCompleted ? 'text-[#4A7C59]' : 'text-[#1F2A1F]'}`}>
           {habit.plant_name || habit.name}
         </span>
         {/* "You showed up today" micro-copy */}
         {justCompleted && (
           <motion.span
-            className="text-[10px] text-[#6ee7a0]"
+            className="text-[10px] text-[#4A7C59]"
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -129,8 +133,20 @@ export function MarkDoneButton({ habit, isCompleted, onComplete }: MarkDoneButto
 
       {loading && (
         <div className="absolute right-4">
-          <div className="w-4 h-4 border-2 border-[#4a8a50] border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-[#4A7C59] border-t-transparent rounded-full animate-spin" />
         </div>
+      )}
+
+      {/* Error feedback */}
+      {error && (
+        <motion.span
+          className="absolute right-4 text-[10px] text-[#c44030] max-w-[120px] text-right"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {error}
+        </motion.span>
       )}
     </motion.button>
   );

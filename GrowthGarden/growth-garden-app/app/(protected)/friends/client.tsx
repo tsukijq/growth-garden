@@ -53,33 +53,33 @@ export function FriendsPageClient({ initialFriends, initialPending }: FriendsPag
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Add friend by username"
-            className="flex-1 px-4 py-2.5 bg-[#141820] border border-[#252a38] rounded-lg text-sm text-[#e0e6f0] focus:outline-none focus:border-[#4a8a50] transition-colors"
+            className="flex-1 px-4 py-2.5 bg-[#ffffff] border border-[#e2e5da] rounded-lg text-sm text-[#1F2A1F] focus:outline-none focus:border-[#4A7C59] transition-colors"
           />
           <button
             type="submit"
-            className="px-4 py-2.5 bg-[#4a8a50] text-white text-sm rounded-lg hover:bg-[#5a9a60] transition-colors"
+            className="px-4 py-2.5 bg-[#4A7C59] text-white text-sm rounded-lg hover:bg-[#3d6b4a] transition-colors"
           >
             Send
           </button>
         </div>
-        {sendError && <p className="text-xs text-[#c05030] mt-2">{sendError}</p>}
-        {sendSuccess && <p className="text-xs text-[#6ee7a0] mt-2">Request sent!</p>}
+        {sendError && <p className="text-xs text-[#c44030] mt-2">{sendError}</p>}
+        {sendSuccess && <p className="text-xs text-[#4A7C59] mt-2">Request sent!</p>}
       </form>
 
       {/* Pending requests */}
       {pending.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm text-[#8b95a8] font-medium mb-3">Pending requests</h2>
+          <h2 className="text-sm text-[#6b7a6b] font-medium mb-3">Pending requests</h2>
           <div className="flex flex-col gap-2">
             {pending.map((request) => (
               <div
                 key={request.id}
-                className="flex items-center justify-between p-3 bg-[#141820] border border-[#252a38] rounded-lg"
+                className="flex items-center justify-between p-3 bg-[#ffffff] border border-[#e2e5da] rounded-lg"
               >
-                <p className="text-sm text-[#e0e6f0]">Friend request received</p>
+                <p className="text-sm text-[#1F2A1F]">Friend request received</p>
                 <button
                   onClick={() => handleAccept(request.id)}
-                  className="px-3 py-1 text-xs bg-[#4a8a50] text-white rounded-full hover:bg-[#5a9a60] transition-colors"
+                  className="px-3 py-1 text-xs bg-[#4A7C59] text-white rounded-full hover:bg-[#3d6b4a] transition-colors"
                 >
                   Accept
                 </button>
@@ -92,7 +92,7 @@ export function FriendsPageClient({ initialFriends, initialPending }: FriendsPag
       {/* Friends list */}
       {friends.length > 0 ? (
         <div>
-          <h2 className="text-sm text-[#8b95a8] font-medium mb-3">Your garden neighbors</h2>
+          <h2 className="text-sm text-[#6b7a6b] font-medium mb-3">Your garden neighbors</h2>
           <div className="flex flex-col gap-2">
             {friends.map((friend) => (
               <FriendRow key={friend.id} profile={friend} habits={friend.habits} />
@@ -101,8 +101,8 @@ export function FriendsPageClient({ initialFriends, initialPending }: FriendsPag
         </div>
       ) : (
         <div className="text-center py-8">
-          <p className="text-[#8b95a8] text-sm">No friends yet.</p>
-          <p className="text-[#8b95a8] text-xs mt-1">Add a friend by their username to visit their garden.</p>
+          <p className="text-[#6b7a6b] text-sm">No friends yet.</p>
+          <p className="text-[#6b7a6b] text-xs mt-1">Add a friend by their username to visit their garden.</p>
         </div>
       )}
     </div>

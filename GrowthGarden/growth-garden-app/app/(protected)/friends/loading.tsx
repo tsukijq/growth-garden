@@ -1,11 +1,33 @@
+'use client';
+
+import { motion } from 'framer-motion';
+
 export default function FriendsLoading() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="h-8 w-24 bg-[#141820] rounded animate-pulse mb-6" />
-      <div className="h-11 bg-[#141820] rounded-lg animate-pulse mb-6" />
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 bg-[#141820] border border-[#252a38] rounded-lg animate-pulse" />
+    <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col items-center justify-center min-h-[50vh]">
+      <motion.div
+        className="text-4xl mb-4"
+        animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        🏡
+      </motion.div>
+      <motion.p
+        className="text-sm text-[#6b7a6b]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
+        Visiting the neighborhood...
+      </motion.p>
+      <div className="flex gap-1.5 mt-4">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-[#4A7C59]"
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.3 }}
+          />
         ))}
       </div>
     </div>

@@ -5,6 +5,7 @@ import {
   shouldWilt,
   calculateWeeklyCompletionRate,
   computeDashboardStats,
+  checkRareFlowerUnlock,
 } from './garden-engine';
 import type { Habit, Completion, RareFlower } from './types';
 
@@ -484,5 +485,73 @@ describe('computeDashboardStats', () => {
     // 2 active habits × 7 days = 14 scheduled. 6 completions in window for active habits
     // 6/14 = 42.86 => 43
     expect(result.weekly_completion_rate).toBe(43);
+  });
+});
+
+
+// =============================================================================
+// checkRareFlowerUnlock Tests
+// =============================================================================
+
+describe('checkRareFlowerUnlock', () => {
+  it('returns unlock for milestone 30 when not already unlocked', () => {
+    const result = checkRareFlowerUnlock(30, []);
+    expect(result).toEqual({ milestone: 30, variant_id: 'crystal_bloom' });
+  });
+
+  it('returns unlock for milestone 60 when not already unlocked', () => {
+    const result = checkRareFlowerUnlock(60, []);
+    expect(result).toEqual({ milestone: 60, variant_id: 'golden_lotus' });
+  });
+
+  it('returns unlock for milestone 100 when not already unlocked', () => {
+    const result = checkRareFlowerUnlock(100, []);
+    expect(result).toEqual({ milestone: 100, variant_id: 'diamond_rose' });
+  });
+
+  it('returns null when streak does not match any milestone', () => {
+    expect(checkRareFlowerUnlock(0, [])).toBeNull();
+    expect(checkRareFlowerUnlock(1, [])).toBeNull();
+    expect(checkRareFlowerUnlock(29, [])).toBeNull();
+    expect(checkRareFlowerUnlock(31, [])).toBeNull();
+    expect(checkRareFlowerUnlock(59, [])).toBeNull();
+    expect(checkRareFlowerUnlock(61, [])).toBeNull();
+    expect(checkRareFlowerUnlock(99, [])).toBeNull();
+    expect(checkRareFlowerUnlock(101, [])).toBeNull();
+  });
+
+  it('returns null when milestone 30 is already unlocked (idempotent)', () => {
+    const existingUnlocks = [makeRareFlower('habit-1', 30)];
+    expect(checkRareFlowerUnlock(30, existingUnlocks)).toBeNull();
+  });
+
+  it('returns null when milestone 60 is already unlocked (idempotent)', () => {
+    const existingUnlocks = [makeRareFlower('habit-1', 60)];
+    expect(checkRareFlowerUnlock(60, existingUnlocks)).toBeNull();
+  });
+
+  it('returns null when milestone 100 is already unlocked (idempotent)', () => {
+    const existingUnlocks = [makeRareFlower('habit-1', 100)];
+    expect(checkRareFlowerUnlock(100, existingUnlocks)).toBeNull();
+  });
+
+  it('returns unlock for milestone 60 when only milestone 30 is unlocked', () => {
+    const existingUnlocks = [makeRareFlower('habit-1', 30)];
+    const result = checkRareFlowerUnlock(60, existingUnlocks);
+    expect(result).toEqual({ milestone: 60, variant_id: 'golden_lotus' });
+  });
+
+  it('returns unlock for milestone 100 when milestones 30 and 60 are unlocked', () => {
+    const existingUnlocks = [
+      makeRareFlower('habit-1', 30),
+      makeRareFlower('habit-1', 60),
+    ];
+    const result = checkRareFlowerUnlock(100, existingUnlocks);
+    expect(result).toEqual({ milestone: 100, variant_id: 'diamond_rose' });
+  });
+
+  it('returns null for negative streak values', () => {
+    expect(checkRareFlowerUnlock(-1, [])).toBeNull();
+    expect(checkRareFlowerUnlock(-30, [])).toBeNull();
   });
 });

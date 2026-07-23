@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { computePlantStage, applyHealthDecay, daysMissed, isRestDay } from '@/lib/utils/plantStage';
-import { Habit, HabitReflection } from '@/types';
+import { Habit, HabitReflection, PlantStage } from '@/types';
+import { sendNotification } from './notifications';
 
 export async function markHabitDone(habitId: string): Promise<Habit | { error: string; milestone?: number }> {
   const supabase = await createServerSupabaseClient();
@@ -35,10 +36,17 @@ export async function markHabitDone(habitId: string): Promise<Habit | { error: s
   // Apply any pending decay first
   let currentHealth = habit.health_score;
   let currentStreak = habit.streak_count;
+  let consistentDays = habit.consistent_days || 0;
   const missed = daysMissed(habit.last_completed, habit.created_at, habit.rest_days);
+
   if (missed > 0) {
     currentHealth = applyHealthDecay(currentHealth, missed);
+    // Streak always resets on any miss
     currentStreak = 0;
+    // Consistent days only resets on 2+ missed days (1-day grace period)
+    if (missed >= 2) {
+      consistentDays = 0;
+    }
   }
 
   // Insert log
@@ -53,7 +61,14 @@ export async function markHabitDone(habitId: string): Promise<Habit | { error: s
   // Apply completion bonus
   const newHealth = Math.min(100, currentHealth + 10);
   const newStreak = currentStreak + 1;
-  const newStage = computePlantStage(newHealth, newStreak);
+  const newConsistentDays = consistentDays + 1;
+  const newStage = computePlantStage(newHealth, newStreak, newConsistentDays);
+
+  // Ensure stage never drops below current (wilt recovery preserves stage)
+  const currentStageOrder: PlantStage[] = ['seed', 'sprout', 'seedling', 'vegetative', 'budding', 'flowering', 'fruiting'];
+  const currentIdx = currentStageOrder.indexOf(habit.plant_stage);
+  const newIdx = currentStageOrder.indexOf(newStage);
+  const finalStage = newIdx >= currentIdx ? newStage : habit.plant_stage;
 
   // Check for milestone
   let newMilestone: number | undefined;
@@ -68,8 +83,9 @@ export async function markHabitDone(habitId: string): Promise<Habit | { error: s
     .update({
       health_score: newHealth,
       streak_count: newStreak,
+      consistent_days: newConsistentDays,
       last_completed: today,
-      plant_stage: newStage,
+      plant_stage: finalStage,
       milestones_reached: milestones,
     })
     .eq('id', habitId)
@@ -79,8 +95,29 @@ export async function markHabitDone(habitId: string): Promise<Habit | { error: s
   if (updateError) return { error: 'Failed to update habit' };
 
   // Update rare blooms count if reached fruiting
-  if (newStage === 'fruiting' && habit.plant_stage !== 'fruiting') {
+  if (finalStage === 'fruiting' && habit.plant_stage !== 'fruiting') {
     await supabase.rpc('increment_rare_blooms', { user_id_input: user.id });
+  }
+
+  // Send milestone notification on stage advancement
+  const plantName = habit.plant_name || habit.name;
+  if (finalStage !== habit.plant_stage) {
+    const stageNames: Record<string, string> = {
+      sprout: 'sprouted',
+      seedling: 'is growing its first leaves',
+      vegetative: 'is growing strong',
+      budding: 'has a bud forming',
+      flowering: 'just bloomed',
+      fruiting: 'reached a legendary stage',
+    };
+    const stageDesc = stageNames[finalStage] || 'grew';
+    await sendNotification(
+      user.id,
+      'milestone',
+      `${plantName} ${stageDesc}! 🌸`,
+      `Your plant moved to the ${finalStage} stage. Keep going.`,
+      habitId
+    );
   }
 
   revalidatePath('/garden');
@@ -95,7 +132,7 @@ export async function markHabitDone(habitId: string): Promise<Habit | { error: s
 
 export async function createHabit(
   name: string,
-  options?: { intention?: string; plantName?: string; restDays?: number[] }
+  options?: { intention?: string; plantName?: string; restDays?: number[]; category?: string }
 ): Promise<Habit | { error: string }> {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -111,11 +148,14 @@ export async function createHabit(
       name: name.trim(),
       plant_name: options?.plantName?.trim() || null,
       intention: options?.intention?.trim() || null,
+      category: options?.category || null,
       rest_days: options?.restDays || [],
       streak_count: 0,
+      consistent_days: 0,
       plant_stage: 'seed',
       health_score: 60,
       milestones_reached: [],
+      has_revealed_bloom: false,
     })
     .select()
     .single();
@@ -230,6 +270,21 @@ export async function getTodayCompletions(): Promise<string[]> {
     .eq('completed_at', today);
 
   return (data || []).map((log) => log.habit_id);
+}
+
+export async function markBloomRevealed(habitId: string): Promise<{ success: boolean }> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false };
+
+  await supabase
+    .from('habits')
+    .update({ has_revealed_bloom: true })
+    .eq('id', habitId)
+    .eq('user_id', user.id);
+
+  revalidatePath('/garden');
+  return { success: true };
 }
 
 export async function releaseHabit(habitId: string): Promise<{ success: boolean; error?: string }> {

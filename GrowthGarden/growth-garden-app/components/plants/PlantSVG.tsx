@@ -14,12 +14,12 @@ export function PlantSVG({ stage, healthScore, variant }: PlantSVGProps) {
   const isDying = visualState === 'dying';
   const isWilting = visualState === 'wilting';
 
-  const stemColor = isDying ? '#6b4c3b' : isWilting ? '#7a6a40' : '#4a8a50';
-  const leafColor = isDying ? '#5a4030' : isWilting ? '#8a7a40' : '#6ee7a0';
+  const stemColor = isDying ? '#6b4c3b' : isWilting ? '#7a6a40' : '#4A7C59';
+  const leafColor = isDying ? '#5a4030' : isWilting ? '#8a7a40' : '#4A7C59';
   const petalColor = variant === 'black_moonflower' ? '#180a30' :
-    variant === 'moonbell_orchid' ? '#9060e8' :
+    variant === 'moonbell_orchid' ? '#7c4dbd' :
     variant === 'crystal_sprout' ? '#80d0f0' :
-    isDying ? '#c05030' : isWilting ? '#e0a060' : '#e890c0';
+    isDying ? '#c44030' : isWilting ? '#b08040' : '#e890c0';
   const centerColor = variant === 'black_moonflower' ? '#7050c0' : '#ffe080';
   const fruitColor = variant === 'black_moonflower' ? '#2a1050' :
     variant === 'moonbell_orchid' ? '#b080ff' : '#f0a040';
@@ -36,8 +36,8 @@ export function PlantSVG({ stage, healthScore, variant }: PlantSVGProps) {
         {/* Seed buried in soil */}
         <ellipse cx="50" cy="76" rx="6" ry="4" fill="#8b6914" />
         {/* Tiny crack showing life */}
-        <path d="M50,74 Q51,72 50,70" stroke="#6ee7a0" strokeWidth="0.8" fill="none" opacity="0.5" />
-        {isDying && <ellipse cx="50" cy="76" rx="6" ry="4" fill="#c05030" opacity="0.3" />}
+        <path d="M50,74 Q51,72 50,70" stroke="#4A7C59" strokeWidth="0.8" fill="none" opacity="0.5" />
+        {isDying && <ellipse cx="50" cy="76" rx="6" ry="4" fill="#c44030" opacity="0.3" />}
       </svg>
     );
   }
@@ -225,7 +225,7 @@ export function PlantSVG({ stage, healthScore, variant }: PlantSVGProps) {
           cx={x}
           cy={y}
           r="1"
-          fill="#c0a0ff"
+          fill="#9060e8"
           opacity={0.3 + (i % 3) * 0.2}
         />
       ))}

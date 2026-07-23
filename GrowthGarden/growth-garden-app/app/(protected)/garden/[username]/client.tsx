@@ -26,14 +26,14 @@ export function FriendGardenClient({ profile, habits: initialHabits }: FriendGar
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="bg-[#141820] border border-[#252a38] rounded-lg px-4 py-3 mb-6">
-        <p className="text-sm text-[#8b95a8]">
-          Visiting <span className="text-[#e0e6f0] font-medium">{profile.username}&apos;s garden</span>
+      <div className="bg-[#ffffff] border border-[#e2e5da] rounded-lg px-4 py-3 mb-6">
+        <p className="text-sm text-[#6b7a6b]">
+          Visiting <span className="text-[#1F2A1F] font-medium">{profile.username}&apos;s garden</span>
         </p>
       </div>
 
       {waterError && (
-        <p className="text-sm text-[#c05030] mb-4">{waterError}</p>
+        <p className="text-sm text-[#c44030] mb-4">{waterError}</p>
       )}
 
       <GardenGrid habits={habits} readOnly onWater={handleWater} />

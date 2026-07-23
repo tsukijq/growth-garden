@@ -1,27 +1,40 @@
 import { PlantStage, RareVariant } from '@/types';
 
 /**
- * The 6 stages of plant growth (based on real botany):
+ * Day-based growth stage thresholds:
  *
- * 1. Seed         — dormant, waiting for first completion
- * 2. Sprout       — germination, first shoots break soil (streak 1-2)
- * 3. Seedling     — small stem with first true leaves (streak 3-6)
- * 4. Vegetative   — rapid growth, multiple leaves, getting taller (streak 7-13)
- * 5. Budding      — flower buds forming, almost ready to bloom (streak 14-20)
- * 6. Flowering    — full bloom, open petals, peak beauty (streak 21-29)
- * 7. Fruiting     — bearing fruit/seeds, the legendary stage (streak 30+)
+ * 1. Seed         — days 1-7
+ * 2. Sprout       — days 8-21
+ * 3. Budding      — days 22-66
+ * 4. Flowering    — days 67+
+ * 5. Fruiting     — reserved for rare flower milestones (streak 30+)
  *
- * Health score affects visual appearance (wilting/drooping) but
- * does NOT block stage advancement. Stage is purely streak-based.
+ * The "seedling" and "vegetative" stages are mapped into the sprout range
+ * for visual progression within days 8-21.
+ *
+ * Stage is based on `consistentDays` — a cumulative counter that only resets
+ * on 2+ consecutive missed days. Health/wilt affects appearance but NOT stage.
+ * Once a stage is reached, it never drops back due to wilting.
  */
-export function computePlantStage(healthScore: number, streakCount: number): PlantStage {
+export function computePlantStage(_healthScore: number, streakCount: number, consistentDays?: number): PlantStage {
+  const days = consistentDays ?? streakCount; // fallback for legacy habits without consistent_days
+
+  // Fruiting is reserved for rare milestone streaks (30+ streak)
   if (streakCount >= 30) return 'fruiting';
-  if (streakCount >= 21) return 'flowering';
-  if (streakCount >= 14) return 'budding';
-  if (streakCount >= 7) return 'vegetative';
-  if (streakCount >= 3) return 'seedling';
-  if (streakCount >= 1) return 'sprout';
+  if (days >= 67) return 'flowering';
+  if (days >= 22) return 'budding';
+  if (days >= 15) return 'vegetative';
+  if (days >= 8) return 'seedling';
+  if (days >= 3) return 'sprout';
   return 'seed';
+}
+
+/**
+ * Compute the highest stage a habit has ever reached based on consistent_days.
+ * Used to ensure wilting never drops the stage below this.
+ */
+export function computeHighestStage(consistentDays: number, streakCount: number): PlantStage {
+  return computePlantStage(100, streakCount, consistentDays);
 }
 
 /**

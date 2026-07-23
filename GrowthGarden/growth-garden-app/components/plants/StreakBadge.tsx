@@ -13,9 +13,9 @@ export function StreakBadge({ streakCount }: StreakBadgeProps) {
   const bgColor = variant === 'black_moonflower' ? 'bg-purple-900/80' :
     variant === 'moonbell_orchid' ? 'bg-purple-700/80' :
     variant === 'crystal_sprout' ? 'bg-cyan-800/80' :
-    'bg-[#252a38]';
+    'bg-[#e2e5da]';
 
-  const textColor = variant ? 'text-purple-200' : 'text-[#8b95a8]';
+  const textColor = variant ? 'text-purple-200' : 'text-[#6b7a6b]';
 
   return (
     <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-medium ${bgColor} ${textColor}`}>

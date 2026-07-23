@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { computePlantStage } from '@/lib/utils/plantStage';
 import { Habit } from '@/types';
+import { sendNotification } from './notifications';
 
 export async function waterFriendHabit(habitId: string, toUserId: string): Promise<Habit | { error: string }> {
   const supabase = await createServerSupabaseClient();
@@ -51,6 +52,16 @@ export async function waterFriendHabit(habitId: string, toUserId: string): Promi
   });
 
   if (rpcError) return { error: 'Watering recorded but health boost failed' };
+
+  // Send notification to the plant owner
+  const plantName = habit.plant_name || habit.name;
+  await sendNotification(
+    toUserId,
+    'social',
+    'A friend watered your plant 💧',
+    `Someone gave ${plantName} a little love.`,
+    habitId
+  );
 
   revalidatePath('/garden');
   return updated as Habit;

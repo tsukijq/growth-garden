@@ -2,18 +2,27 @@ export type PlantStage = 'seed' | 'sprout' | 'seedling' | 'vegetative' | 'buddin
 
 export type RareVariant = 'crystal_sprout' | 'moonbell_orchid' | 'black_moonflower' | null;
 
+export type HabitCategory = 'fitness' | 'mindfulness' | 'learning' | 'creativity' | 'discipline' | 'relationships' | 'rest' | 'other';
+
+export type FlowerSpecies = 'sunflower' | 'lotus' | 'iris' | 'tulip' | 'carnation' | 'rose' | 'peony' | 'daisy';
+
+export type MoodTier = 'vivid' | 'muted' | 'dusty';
+
 export interface Habit {
   id: string;
   user_id: string;
   name: string;
   plant_name: string | null;
   intention: string | null;
+  category: HabitCategory | null;
   streak_count: number;
+  consistent_days: number;
   last_completed: string | null;
   plant_stage: PlantStage;
   health_score: number;
   rest_days: number[];
   milestones_reached: number[];
+  has_revealed_bloom: boolean;
   released_at?: string | null;
   created_at: string;
 }

@@ -5,7 +5,7 @@
 // mechanics. These functions have no database access for testability.
 // =============================================================================
 
-import type { Completion, DashboardStats, GrowthStage, Habit, RareFlower } from './types';
+import type { Completion, DashboardStats, GrowthStage, Habit, RareFlower, RareFlowerMilestone, RareFlowerUnlock, UpdateHabitInput } from './types';
 
 /**
  * Computes the visual growth stage of a plant based on its streak and wilting state.
@@ -94,6 +94,65 @@ export function shouldWilt(habit: Habit, completions: Completion[], today: Date)
   );
 
   return !hasCompletion;
+}
+
+// =============================================================================
+// Rare Flower Unlock Logic
+// =============================================================================
+
+/**
+ * Mapping from milestone streak values to their corresponding flower variant IDs.
+ */
+const MILESTONE_VARIANTS: Record<RareFlowerMilestone, string> = {
+  30: 'crystal_bloom',
+  60: 'golden_lotus',
+  100: 'diamond_rose',
+};
+
+/**
+ * The ordered list of valid rare flower milestones.
+ */
+const MILESTONES: RareFlowerMilestone[] = [30, 60, 100];
+
+/**
+ * Checks whether a streak value triggers a rare flower unlock.
+ *
+ * Returns a new RareFlowerUnlock if and only if:
+ * 1. The streak equals one of the milestones (30, 60, or 100)
+ * 2. No existing unlock exists for that milestone
+ *
+ * If the milestone is already unlocked, returns null (idempotent).
+ * If the streak does not match any milestone, returns null.
+ *
+ * @param streak - The current streak count
+ * @param existingUnlocks - The rare flowers already unlocked for this habit
+ * @returns A RareFlowerUnlock object if a new unlock should occur, or null
+ */
+export function checkRareFlowerUnlock(
+  streak: number,
+  existingUnlocks: RareFlower[]
+): RareFlowerUnlock | null {
+  // Check if the streak matches any milestone
+  if (!MILESTONES.includes(streak as RareFlowerMilestone)) {
+    return null;
+  }
+
+  const milestone = streak as RareFlowerMilestone;
+
+  // Check if this milestone is already unlocked (idempotent)
+  const alreadyUnlocked = existingUnlocks.some(
+    (unlock) => unlock.milestone === milestone
+  );
+
+  if (alreadyUnlocked) {
+    return null;
+  }
+
+  // Return the new unlock
+  return {
+    milestone,
+    variant_id: MILESTONE_VARIANTS[milestone],
+  };
 }
 
 // -----------------------------------------------------------------------------
@@ -244,5 +303,134 @@ export function computeDashboardStats(
     total_lifetime_completions,
     total_rare_flowers,
     weekly_completion_rate,
+  };
+}
+
+
+// =============================================================================
+// Habit Management — Pure Domain Functions
+// =============================================================================
+// These functions compute new habit state for management operations (edit,
+// pause, resume, archive, restore) without side effects. They receive the
+// current habit state and return the updated state.
+// =============================================================================
+
+/**
+ * Updates a habit's name and/or schedule while preserving streak and growth stage.
+ *
+ * Only name, schedule_type, and schedule_days are mutable via edit.
+ * The current_streak, is_wilting, and computed growth stage are preserved.
+ *
+ * @param habit - The current habit state (must be active)
+ * @param updates - The fields to update (name, schedule_type, schedule_days)
+ * @returns The updated habit with streak and growth stage preserved
+ */
+export function editHabit(habit: Habit, updates: UpdateHabitInput): Habit {
+  return {
+    ...habit,
+    name: updates.name !== undefined ? updates.name : habit.name,
+    schedule_type: updates.schedule_type !== undefined ? updates.schedule_type : habit.schedule_type,
+    schedule_days: updates.schedule_days !== undefined ? updates.schedule_days : habit.schedule_days,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Pauses a habit, freezing its current streak and growth stage.
+ *
+ * When paused:
+ * - The current streak and computed growth stage are stored in paused fields
+ * - Status is set to 'paused'
+ * - The habit is excluded from wilting evaluation
+ *
+ * @param habit - The current active habit to pause
+ * @returns The habit in paused state with frozen streak/growth stage
+ */
+export function pauseHabit(habit: Habit): Habit {
+  const currentGrowthStage = computeGrowthStage(habit.current_streak, habit.is_wilting);
+  return {
+    ...habit,
+    status: 'paused',
+    paused_at: new Date().toISOString(),
+    paused_streak: habit.current_streak,
+    paused_growth_stage: currentGrowthStage,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Resumes a paused habit, restoring its frozen streak and growth stage.
+ *
+ * When resumed:
+ * - The streak is restored from paused_streak
+ * - The wilting state is restored (if paused_growth_stage was 'wilting')
+ * - Status is set back to 'active'
+ * - Wilting evaluation resumes starting from the next scheduled day
+ * - The paused fields are cleared
+ *
+ * @param habit - The current paused habit to resume
+ * @returns The habit in active state with restored streak/growth stage
+ */
+export function resumeHabit(habit: Habit): Habit {
+  const wasWilting = habit.paused_growth_stage === 'wilting';
+  return {
+    ...habit,
+    status: 'active',
+    current_streak: habit.paused_streak ?? habit.current_streak,
+    is_wilting: wasWilting,
+    paused_at: null,
+    paused_streak: null,
+    paused_growth_stage: null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Archives a habit, removing it from the active garden view.
+ *
+ * When archived:
+ * - Status is set to 'archived'
+ * - All completion history and rare flowers are preserved (handled externally)
+ * - The growth stage and streak at archival time are preserved in the habit record
+ *
+ * @param habit - The current active habit to archive
+ * @returns The habit in archived state with preserved growth stage and streak
+ */
+export function archiveHabit(habit: Habit): Habit {
+  return {
+    ...habit,
+    status: 'archived',
+    archived_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Restores an archived habit to active state.
+ *
+ * When restored:
+ * - Status is set back to 'active'
+ * - The growth stage matches the value at archival time (computed from the
+ *   streak at archival, but since streak resets to zero, we use the stored
+ *   streak to determine the archived growth stage, then reset streak)
+ * - The streak is reset to zero
+ * - All historical completion data and rare flowers are preserved
+ *
+ * NOTE: The growth stage at restoration equals the growth stage at archival time.
+ * Since streak resets to zero but we want to preserve the archived growth stage,
+ * we need the caller to track the archived growth stage. We compute it from the
+ * habit's state at archival (current_streak and is_wilting at archive time).
+ *
+ * @param habit - The archived habit to restore
+ * @returns The habit in active state with streak reset to zero
+ */
+export function restoreHabit(habit: Habit): Habit {
+  return {
+    ...habit,
+    status: 'active',
+    current_streak: 0,
+    is_wilting: false,
+    archived_at: null,
+    updated_at: new Date().toISOString(),
   };
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { createHabit } from '@/lib/actions/habits';
 import { getSeasonalSeeds } from '@/lib/utils/seasonal';
 import { useRouter } from 'next/navigation';
@@ -27,24 +27,44 @@ const streakSeeds = [
 
 export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
   const [habitName, setHabitName] = useState('');
+  const [intention, setIntention] = useState('');
+  const [plantName, setPlantName] = useState('');
   const [creating, setCreating] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  const [selectedSeed, setSelectedSeed] = useState<string | null>(null);
   const router = useRouter();
 
   const seasonalSeeds = getSeasonalSeeds();
 
   async function plantSeed(name: string) {
     setCreating(true);
-    await createHabit(name);
+    await createHabit(name, {
+      intention: intention.trim() || undefined,
+      plantName: plantName.trim() || undefined,
+    });
     setCreating(false);
+    setSelectedSeed(null);
+    setIntention('');
+    setPlantName('');
     router.push('/garden');
     router.refresh();
+  }
+
+  function selectSeed(name: string) {
+    setSelectedSeed(name);
+    setHabitName(name);
+  }
+
+  async function handleConfirmSeed(e: React.FormEvent) {
+    e.preventDefault();
+    if (!habitName.trim()) return;
+    await plantSeed(habitName.trim());
   }
 
   async function handleCustomSeed(e: React.FormEvent) {
     e.preventDefault();
     if (!habitName.trim()) return;
-    await plantSeed(habitName.trim());
+    setSelectedSeed(habitName.trim());
   }
 
   function daysUntil(date: Date): number {
@@ -56,24 +76,80 @@ export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
     <div className="max-w-2xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold mb-6">Seed Library</h1>
 
+      {/* Confirmation form when a seed is selected */}
+      <AnimatePresence>
+        {selectedSeed && (
+          <motion.form
+            onSubmit={handleConfirmSeed}
+            className="mb-6 p-4 bg-[#ffffff] border border-[#4A7C59] rounded-lg flex flex-col gap-3"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            aria-label="Confirm seed planting"
+          >
+            <p className="text-sm text-[#4A7C59] font-medium">🌱 Planting: {habitName}</p>
+            <div>
+              <label htmlFor="seed-plant-name" className="text-xs text-[#6b7a6b] mb-1 block">Plant name (optional)</label>
+              <input
+                id="seed-plant-name"
+                type="text"
+                value={plantName}
+                onChange={(e) => setPlantName(e.target.value)}
+                placeholder="Give your plant a name"
+                maxLength={30}
+                className="w-full px-4 py-2.5 bg-[#F7F8F2] border border-[#e2e5da] rounded-lg text-sm text-[#1F2A1F] focus:outline-none focus:border-[#4A7C59] transition-colors"
+              />
+            </div>
+            <div>
+              <label htmlFor="seed-intention" className="text-xs text-[#6b7a6b] mb-1 block">Why does this matter to you? (optional)</label>
+              <input
+                id="seed-intention"
+                type="text"
+                value={intention}
+                onChange={(e) => setIntention(e.target.value)}
+                placeholder="I'm planting this because..."
+                maxLength={150}
+                className="w-full px-4 py-2.5 bg-[#F7F8F2] border border-[#e2e5da] rounded-lg text-sm text-[#6b7a6b] italic focus:outline-none focus:border-[#4A7C59] focus:text-[#1F2A1F] focus:not-italic transition-colors"
+              />
+            </div>
+            <div className="flex gap-2 mt-1">
+              <button
+                type="submit"
+                disabled={creating}
+                className="flex-1 py-2.5 bg-[#4A7C59] text-white text-sm rounded-lg hover:bg-[#3d6b4a] transition-colors disabled:opacity-50"
+              >
+                {creating ? 'Planting...' : '🌱 Plant seed'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSelectedSeed(null); setIntention(''); setPlantName(''); }}
+                className="flex-1 py-2.5 border border-[#e2e5da] text-[#6b7a6b] text-sm rounded-lg hover:text-[#1F2A1F] hover:border-[#4A7C59] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.form>
+        )}
+      </AnimatePresence>
+
       {/* Limited time section */}
       {seasonalSeeds.length > 0 && (
         <section className="mb-8">
-          <h2 className="text-sm text-[#8b95a8] font-medium mb-3">Limited time</h2>
+          <h2 className="text-sm text-[#6b7a6b] font-medium mb-3">Limited time</h2>
           <div className="flex flex-col gap-2">
             {seasonalSeeds.map((seed) => (
               <motion.button
                 key={seed.name}
-                onClick={() => plantSeed(seed.name)}
-                disabled={creating}
-                className="flex items-center justify-between p-4 bg-[#141820] border border-[#252a38] rounded-lg hover:border-[#9060e8] transition-colors text-left"
+                onClick={() => selectSeed(seed.name)}
+                disabled={creating || !!selectedSeed}
+                className="flex items-center justify-between p-4 bg-[#ffffff] border border-[#e2e5da] rounded-lg hover:border-[#7c4dbd] transition-colors text-left"
                 whileTap={{ scale: 0.98 }}
               >
                 <div>
-                  <p className="text-sm text-[#c0a0ff] font-medium">{seed.name}</p>
-                  <p className="text-xs text-[#8b95a8] mt-0.5">{seed.description}</p>
+                  <p className="text-sm text-[#9060e8] font-medium">{seed.name}</p>
+                  <p className="text-xs text-[#6b7a6b] mt-0.5">{seed.description}</p>
                 </div>
-                <span className="text-xs text-[#8b95a8] whitespace-nowrap ml-4">
+                <span className="text-xs text-[#6b7a6b] whitespace-nowrap ml-4">
                   {daysUntil(seed.endsAt)}d left
                 </span>
               </motion.button>
@@ -84,7 +160,7 @@ export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
 
       {/* Streak unlocks section */}
       <section className="mb-8">
-        <h2 className="text-sm text-[#8b95a8] font-medium mb-3">Streak unlocks</h2>
+        <h2 className="text-sm text-[#6b7a6b] font-medium mb-3">Streak unlocks</h2>
         <div className="flex flex-col gap-2">
           {streakSeeds.map((seed) => {
             const progress = Math.min(100, (longestStreak / seed.streakRequired) * 100);
@@ -93,23 +169,23 @@ export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
             return (
               <div
                 key={seed.name}
-                className={`p-4 bg-[#141820] border rounded-lg ${unlocked ? 'border-[#9060e8]' : 'border-[#252a38]'}`}
+                className={`p-4 bg-[#ffffff] border rounded-lg ${unlocked ? 'border-[#7c4dbd]' : 'border-[#e2e5da]'}`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <p className={`text-sm font-medium ${unlocked ? 'text-[#c0a0ff]' : 'text-[#8b95a8]'}`}>
+                  <p className={`text-sm font-medium ${unlocked ? 'text-[#9060e8]' : 'text-[#6b7a6b]'}`}>
                     {seed.name}
                   </p>
-                  <span className="text-xs text-[#8b95a8]">
+                  <span className="text-xs text-[#6b7a6b]">
                     {unlocked ? '✨ Unlocked' : `${longestStreak}/${seed.streakRequired}d`}
                   </span>
                 </div>
-                <p className="text-xs text-[#8b95a8] mb-2">{seed.description}</p>
-                <div className="w-full h-1.5 bg-[#252a38] rounded-full overflow-hidden">
+                <p className="text-xs text-[#6b7a6b] mb-2">{seed.description}</p>
+                <div className="w-full h-1.5 bg-[#e2e5da] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${progress}%`,
-                      backgroundColor: unlocked ? '#9060e8' : '#4a8a50',
+                      backgroundColor: unlocked ? '#7c4dbd' : '#4A7C59',
                     }}
                   />
                 </div>
@@ -121,18 +197,18 @@ export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
 
       {/* Always available section */}
       <section className="mb-8">
-        <h2 className="text-sm text-[#8b95a8] font-medium mb-3">Always available</h2>
+        <h2 className="text-sm text-[#6b7a6b] font-medium mb-3">Always available</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {standardSeeds.map((seed) => (
             <motion.button
               key={seed.name}
-              onClick={() => plantSeed(seed.name)}
-              disabled={creating}
-              className="p-4 bg-[#141820] border border-[#252a38] rounded-lg hover:border-[#4a8a50] transition-colors text-left"
+              onClick={() => selectSeed(seed.name)}
+              disabled={creating || !!selectedSeed}
+              className="p-4 bg-[#ffffff] border border-[#e2e5da] rounded-lg hover:border-[#4A7C59] transition-colors text-left"
               whileTap={{ scale: 0.98 }}
             >
-              <p className="text-sm text-[#e0e6f0] font-medium">{seed.name}</p>
-              <p className="text-xs text-[#8b95a8] mt-0.5">{seed.description}</p>
+              <p className="text-sm text-[#1F2A1F] font-medium">{seed.name}</p>
+              <p className="text-xs text-[#6b7a6b] mt-0.5">{seed.description}</p>
             </motion.button>
           ))}
         </div>
@@ -143,7 +219,7 @@ export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
         {!showCustom ? (
           <button
             onClick={() => setShowCustom(true)}
-            className="w-full p-4 border border-dashed border-[#252a38] rounded-lg text-sm text-[#8b95a8] hover:border-[#4a8a50] hover:text-[#e0e6f0] transition-colors"
+            className="w-full p-4 border border-dashed border-[#e2e5da] rounded-lg text-sm text-[#6b7a6b] hover:border-[#4A7C59] hover:text-[#1F2A1F] transition-colors"
           >
             + Plant a custom seed
           </button>
@@ -158,14 +234,14 @@ export function SeedsPageClient({ longestStreak }: SeedsPageClientProps) {
               placeholder="Name your habit"
               maxLength={50}
               autoFocus
-              className="flex-1 px-4 py-3 bg-[#141820] border border-[#252a38] rounded-lg text-sm text-[#e0e6f0] focus:outline-none focus:border-[#4a8a50] transition-colors"
+              className="flex-1 px-4 py-3 bg-[#ffffff] border border-[#e2e5da] rounded-lg text-sm text-[#1F2A1F] focus:outline-none focus:border-[#4A7C59] transition-colors"
             />
             <button
               type="submit"
               disabled={creating || !habitName.trim()}
-              className="px-5 py-3 bg-[#4a8a50] text-white text-sm rounded-lg hover:bg-[#5a9a60] transition-colors disabled:opacity-50"
+              className="px-5 py-3 bg-[#4A7C59] text-white text-sm rounded-lg hover:bg-[#3d6b4a] transition-colors disabled:opacity-50"
             >
-              Plant
+              Next
             </button>
           </form>
         )}

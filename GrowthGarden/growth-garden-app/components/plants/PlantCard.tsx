@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Habit } from '@/types';
 import { getRareVariant, isRestDay } from '@/lib/utils/plantStage';
+import { getSpeciesForHabit, getMoodTier } from '@/lib/utils/species';
 import { PlantSVG } from './PlantSVG';
+import { SpeciesPlantSVG } from './SpeciesPlantSVG';
 import { HealthBar } from './HealthBar';
 import { StreakBadge } from './StreakBadge';
 
@@ -40,7 +42,7 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
 
   return (
     <motion.div
-      className="relative bg-[#141820] border border-[#252a38] rounded-xl p-4 flex flex-col items-center gap-2"
+      className="relative bg-[#ffffff] border border-[#e2e5da] rounded-xl p-4 flex flex-col items-center gap-2"
       animate={isAnimating ? { scale: [1, 1.05, 1] } : {}}
       transition={{ duration: 0.6, ease: 'easeOut' }}
       onMouseEnter={() => habit.intention && setShowIntention(true)}
@@ -52,7 +54,7 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
       {onRelease && (
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="absolute top-2 left-2 w-5 h-5 flex items-center justify-center text-[#8b95a8] hover:text-[#e0e6f0] transition-colors rounded"
+          className="absolute top-2 left-2 w-5 h-5 flex items-center justify-center text-[#6b7a6b] hover:text-[#1F2A1F] transition-colors rounded"
           aria-label="Plant options"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor">
@@ -67,7 +69,7 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
       {reflectionCount && reflectionCount > 0 && (
         <button
           onClick={() => onViewJournal?.(habit.id)}
-          className="absolute top-2 left-8 text-[#8b95a8] hover:text-[#e0e6f0] transition-colors"
+          className="absolute top-2 left-8 text-[#6b7a6b] hover:text-[#1F2A1F] transition-colors"
           aria-label="View garden journal"
           title="Garden journal"
         >
@@ -81,7 +83,7 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
       <AnimatePresence>
         {showMenu && (
           <motion.div
-            className="absolute top-8 left-2 z-10 bg-[#1a1f28] border border-[#252a38] rounded-lg shadow-lg overflow-hidden"
+            className="absolute top-8 left-2 z-10 bg-[#ffffff] border border-[#e2e5da] rounded-lg shadow-lg overflow-hidden"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
@@ -89,25 +91,25 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
             {!confirmRelease ? (
               <button
                 onClick={() => setConfirmRelease(true)}
-                className="px-4 py-2 text-xs text-[#e0a060] hover:bg-[#252a38] w-full text-left whitespace-nowrap"
+                className="px-4 py-2 text-xs text-[#b08040] hover:bg-[#e2e5da] w-full text-left whitespace-nowrap"
               >
                 🍃 Release to the wild
               </button>
             ) : (
               <div className="px-3 py-2 flex flex-col gap-1.5">
-                <p className="text-[10px] text-[#8b95a8] leading-tight">
+                <p className="text-[10px] text-[#6b7a6b] leading-tight">
                   Let this plant grow freely?<br />You can replant within 7 days.
                 </p>
                 <div className="flex gap-1.5">
                   <button
                     onClick={handleRelease}
-                    className="px-2 py-1 text-[10px] bg-[#e0a060]/20 text-[#e0a060] rounded hover:bg-[#e0a060]/30 transition-colors"
+                    className="px-2 py-1 text-[10px] bg-[#b08040]/20 text-[#b08040] rounded hover:bg-[#b08040]/30 transition-colors"
                   >
                     Release
                   </button>
                   <button
                     onClick={() => { setConfirmRelease(false); setShowMenu(false); }}
-                    className="px-2 py-1 text-[10px] text-[#8b95a8] rounded hover:text-[#e0e6f0] transition-colors"
+                    className="px-2 py-1 text-[10px] text-[#6b7a6b] rounded hover:text-[#1F2A1F] transition-colors"
                   >
                     Keep
                   </button>
@@ -126,43 +128,53 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
       )}
 
       <div className="w-24 h-24">
-        <PlantSVG
-          stage={habit.plant_stage}
-          healthScore={habit.health_score}
-          variant={variant}
-        />
+        {habit.category ? (
+          <SpeciesPlantSVG
+            stage={habit.plant_stage}
+            healthScore={habit.health_score}
+            species={getSpeciesForHabit(habit.category)}
+            variant={variant}
+            moodTier={getMoodTier(reflectionCount || 0)}
+          />
+        ) : (
+          <PlantSVG
+            stage={habit.plant_stage}
+            healthScore={habit.health_score}
+            variant={variant}
+          />
+        )}
       </div>
 
       {/* Plant name / habit name */}
-      <p className="text-sm text-[#e0e6f0] font-medium text-center truncate w-full">
+      <p className="text-sm text-[#1F2A1F] font-medium text-center truncate w-full">
         {displayName}
       </p>
       {subtitle && (
-        <p className="text-[10px] text-[#8b95a8] -mt-1 text-center truncate w-full">{subtitle}</p>
+        <p className="text-[10px] text-[#6b7a6b] -mt-1 text-center truncate w-full">{subtitle}</p>
       )}
 
       {/* Compassionate wilting/dying copy */}
       {isDying && (
-        <p className="text-[10px] text-[#c05030]/80 text-center">
+        <p className="text-[10px] text-[#c44030]/80 text-center">
           It&apos;s not too late. One day at a time.
         </p>
       )}
       {isWilting && !isDying && (
-        <p className="text-[10px] text-[#e0a060]/80 text-center">
+        <p className="text-[10px] text-[#b08040]/80 text-center">
           Your plant is resting. It remembers you.
         </p>
       )}
 
       {/* Intention shown on wilting as gentle nudge */}
       {isWilting && habit.intention && (
-        <p className="text-[10px] text-[#8b95a8] italic text-center truncate w-full">
+        <p className="text-[10px] text-[#6b7a6b] italic text-center truncate w-full">
           &ldquo;{habit.intention}&rdquo;
         </p>
       )}
 
       {/* Rest day message */}
       {isResting && !isWilting && (
-        <p className="text-[10px] text-[#8b95a8] text-center">Rest day. Your plant is okay.</p>
+        <p className="text-[10px] text-[#6b7a6b] text-center">Rest day. Your plant is okay.</p>
       )}
 
       <HealthBar healthScore={habit.health_score} />
@@ -171,12 +183,12 @@ export function PlantCard({ habit, showWaterButton, onWater, onRelease, onViewJo
       <AnimatePresence>
         {showIntention && !isWilting && habit.intention && (
           <motion.div
-            className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-[#1a1f28] border border-[#252a38] rounded-md shadow-lg z-20 whitespace-nowrap"
+            className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-[#ffffff] border border-[#e2e5da] rounded-md shadow-lg z-20 whitespace-nowrap"
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
           >
-            <p className="text-[10px] text-[#8b95a8] italic">&ldquo;{habit.intention}&rdquo;</p>
+            <p className="text-[10px] text-[#6b7a6b] italic">&ldquo;{habit.intention}&rdquo;</p>
           </motion.div>
         )}
       </AnimatePresence>

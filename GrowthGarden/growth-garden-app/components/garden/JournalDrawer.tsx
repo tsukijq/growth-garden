@@ -26,17 +26,17 @@ export function JournalDrawer({ habitId, habitName, onClose }: JournalDrawerProp
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-end justify-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
-      {/* Drawer */}
+      {/* Drawer — sits above the bottom navbar */}
       <motion.div
-        className="relative w-full max-w-lg bg-[#141820] border-t border-[#252a38] rounded-t-2xl px-4 py-5 max-h-[70vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-[#ffffff] border-t border-[#e2e5da] rounded-t-2xl px-4 pt-5 pb-24 max-h-[70vh] overflow-y-auto shadow-xl"
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -44,23 +44,23 @@ export function JournalDrawer({ habitId, habitName, onClose }: JournalDrawerProp
       >
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-sm font-medium text-[#e0e6f0]">Your garden journal</p>
-            <p className="text-xs text-[#8b95a8]">{habitName}</p>
+            <p className="text-sm font-medium text-[#1F2A1F]">Your garden journal</p>
+            <p className="text-xs text-[#6b7a6b]">{habitName}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-[#8b95a8] hover:text-[#e0e6f0] transition-colors text-sm"
+            className="text-[#6b7a6b] hover:text-[#1F2A1F] transition-colors text-sm"
           >
             ✕
           </button>
         </div>
 
         {loading && (
-          <p className="text-xs text-[#8b95a8] text-center py-8">Loading...</p>
+          <p className="text-xs text-[#6b7a6b] text-center py-8">Loading...</p>
         )}
 
         {!loading && reflections.length === 0 && (
-          <p className="text-xs text-[#8b95a8] text-center py-8">
+          <p className="text-xs text-[#6b7a6b] text-center py-8">
             No reflections yet. They&apos;ll appear here after you mark done.
           </p>
         )}
@@ -69,10 +69,10 @@ export function JournalDrawer({ habitId, habitName, onClose }: JournalDrawerProp
           <div className="flex flex-col gap-3">
             {reflections.map((r) => (
               <div key={r.id} className="flex gap-3 items-start">
-                <span className="text-[10px] text-[#8b95a8] whitespace-nowrap mt-0.5 min-w-[60px]">
+                <span className="text-[10px] text-[#6b7a6b] whitespace-nowrap mt-0.5 min-w-[60px]">
                   {new Date(r.reflected_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
-                <p className="text-xs text-[#e0e6f0] leading-relaxed">{r.note}</p>
+                <p className="text-xs text-[#1F2A1F] leading-relaxed">{r.note}</p>
               </div>
             ))}
           </div>

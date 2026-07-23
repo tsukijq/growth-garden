@@ -48,7 +48,7 @@ export function WaterButton({ habitId, toUserId, onWatered }: WaterButtonProps) 
       >
         {watered ? '💧 Watered!' : loading ? '💧...' : '💧 Water this plant'}
       </motion.button>
-      {error && <p className="text-xs text-[#c05030] mt-1">{error}</p>}
+      {error && <p className="text-xs text-[#c44030] mt-1">{error}</p>}
     </div>
   );
 }

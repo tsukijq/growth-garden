@@ -14,22 +14,22 @@ export function SeasonBanner() {
     <AnimatePresence>
       {!dismissed && (
         <motion.div
-          className="w-full bg-[#141820] border border-[#252a38] rounded-lg px-4 py-3 mb-4 relative"
+          className="w-full bg-[#ffffff] border border-[#e2e5da] rounded-lg px-4 py-3 mb-4 relative"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, height: 0, marginBottom: 0 }}
         >
           <button
             onClick={() => setDismissed(true)}
-            className="absolute top-2 right-3 text-[#8b95a8] hover:text-[#e0e6f0] text-xs transition-colors"
+            className="absolute top-2 right-3 text-[#6b7a6b] hover:text-[#1F2A1F] text-xs transition-colors"
             aria-label="Dismiss seasonal banner"
           >
             ✕
           </button>
-          <p className="text-sm text-[#e0e6f0]">
+          <p className="text-sm text-[#1F2A1F]">
             {season.emoji} <span className="font-medium">{season.name}</span>
           </p>
-          <p className="text-xs text-[#8b95a8] mt-1">{season.copy}</p>
+          <p className="text-xs text-[#6b7a6b] mt-1">{season.copy}</p>
         </motion.div>
       )}
     </AnimatePresence>
