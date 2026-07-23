@@ -16,7 +16,6 @@ interface EditHabitFormProps {
 
 export function EditHabitForm({ habitId, defaultValues }: EditHabitFormProps) {
   async function handleUpdate(formData: FormData) {
-    'use server';
     const initialState: HabitActionResult = { success: false };
     return updateHabitAction(habitId, initialState, formData);
   }

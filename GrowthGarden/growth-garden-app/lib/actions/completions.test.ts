@@ -157,7 +157,7 @@ describe('completeHabit Server Action', () => {
 
     expect(result.success).toBe(true);
     expect(result.newStreak).toBe(6); // 5 + 1
-    expect(result.growthStage).toBe('budding'); // streak 6 = budding (>= 3, < 7... wait, 6 >= 3 and < 7 => sprout)
+    expect(result.growthStage).toBe('sprout'); // streak 6: >= 3 and < 7 => sprout
   });
 
   it('handles wilting recovery: sets streak to 1 and is_wilting to false', async () => {

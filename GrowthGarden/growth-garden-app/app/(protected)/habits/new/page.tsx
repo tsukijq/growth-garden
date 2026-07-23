@@ -1,17 +1,7 @@
-'use client';
-
 import Link from 'next/link';
-import { HabitForm } from '@/components/habits/HabitForm';
-import { createHabitAction } from '@/lib/actions/habit-management';
-import type { HabitActionResult } from '@/lib/actions/habit-management';
+import { NewHabitFormWrapper } from './client';
 
 export default function NewHabitPage() {
-  async function handleCreate(formData: FormData) {
-    'use server';
-    const initialState: HabitActionResult = { success: false };
-    return createHabitAction(initialState, formData);
-  }
-
   return (
     <div className="max-w-lg mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
@@ -27,7 +17,7 @@ export default function NewHabitPage() {
         <h1 className="text-xl font-bold text-[#1F2A1F]">New Habit</h1>
       </div>
 
-      <HabitForm action={handleCreate} submitLabel="Create Habit" />
+      <NewHabitFormWrapper />
     </div>
   );
 }
