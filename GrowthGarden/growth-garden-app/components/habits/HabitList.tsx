@@ -4,8 +4,9 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { pauseHabit, resumeHabit, archiveHabit, restoreHabit } from '@/lib/actions/habit-management';
-import { computeGrowthStage } from '@/lib/garden-engine';
-import type { GrowthStage } from '@/lib/types';
+import { completeHabit } from '@/lib/actions/completions';
+import { computeGrowthStage, isScheduledDay } from '@/lib/garden-engine';
+import type { GrowthStage, Habit } from '@/lib/types';
 
 interface HabitItem {
   id: string;
@@ -44,6 +45,10 @@ export function HabitList({ habits, completedToday = [] }: HabitListProps) {
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [completedIds, setCompletedIds] = useState<string[]>(completedToday);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [completionSuccess, setCompletionSuccess] = useState<string | null>(null);
+  const [streakOverrides, setStreakOverrides] = useState<Record<string, number>>({});
 
   async function handleAction(
     habitId: string,
@@ -62,11 +67,65 @@ export function HabitList({ habits, completedToday = [] }: HabitListProps) {
     }
   }
 
+  async function handleComplete(habit: HabitItem) {
+    setActionError(null);
+    setCompletingId(habit.id);
+    setCompletionSuccess(null);
+
+    const today = new Date().toISOString().split('T')[0];
+    const result = await completeHabit(habit.id, today);
+
+    setCompletingId(null);
+
+    if (result.success) {
+      // Update local state immediately for instant feedback
+      setCompletedIds((prev) => [...prev, habit.id]);
+      if (result.newStreak !== undefined) {
+        setStreakOverrides((prev) => ({ ...prev, [habit.id]: result.newStreak! }));
+      }
+      setCompletionSuccess(habit.id);
+      // Clear success animation after 2 seconds
+      setTimeout(() => setCompletionSuccess(null), 2000);
+      // Refresh server data in background
+      startTransition(() => {
+        router.refresh();
+      });
+    } else if (result.error) {
+      // Show specific error messages for known error codes
+      if (result.error.code === 'DUPLICATE_COMPLETION') {
+        setActionError(`"${habit.name}" has already been completed today.`);
+        // Also mark as completed locally to prevent further attempts
+        setCompletedIds((prev) => [...prev, habit.id]);
+      } else if (result.error.code === 'NOT_SCHEDULED_DAY') {
+        setActionError(`Today is not a scheduled day for "${habit.name}".`);
+      } else {
+        setActionError(result.error.message);
+      }
+    }
+  }
+
   function getGrowthStage(habit: HabitItem): GrowthStage {
     if (habit.status === 'paused' && habit.paused_growth_stage) {
       return habit.paused_growth_stage as GrowthStage;
     }
     return computeGrowthStage(habit.current_streak, habit.is_wilting);
+  }
+
+  function getDisplayStreak(habit: HabitItem): number {
+    if (streakOverrides[habit.id] !== undefined) {
+      return streakOverrides[habit.id];
+    }
+    return habit.current_streak;
+  }
+
+  function isTodayScheduled(habit: HabitItem): boolean {
+    const today = new Date();
+    // Cast to match the Habit type expected by isScheduledDay
+    const habitForCheck = {
+      schedule_type: habit.schedule_type,
+      schedule_days: habit.schedule_days,
+    } as Habit;
+    return isScheduledDay(habitForCheck, today);
   }
 
   function formatSchedule(habit: HabitItem): string {
@@ -115,18 +174,68 @@ export function HabitList({ habits, completedToday = [] }: HabitListProps) {
           <div className="flex flex-col gap-2">
             {activeHabits.map((habit) => {
               const stage = getGrowthStage(habit);
-              const isCompletedToday = completedToday.includes(habit.id);
+              const isCompletedToday = completedIds.includes(habit.id);
+              const isScheduled = isTodayScheduled(habit);
+              const isCompleting = completingId === habit.id;
               const isLoading = loadingId === habit.id;
+              const showSuccess = completionSuccess === habit.id;
+              const displayStreak = getDisplayStreak(habit);
 
               return (
                 <div
                   key={habit.id}
-                  className="p-4 bg-white border border-[#e2e5da] rounded-lg"
+                  className={`p-4 bg-white border border-[#e2e5da] rounded-lg transition-all ${
+                    showSuccess ? 'ring-2 ring-[#4A7C59]/40 bg-[#4A7C59]/5' : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
+                      {/* Completion button */}
+                      <button
+                        onClick={() => handleComplete(habit)}
+                        disabled={!isScheduled || isCompletedToday || isCompleting || isPending}
+                        className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                          isCompletedToday
+                            ? 'border-[#4A7C59] bg-[#4A7C59] text-white cursor-default'
+                            : !isScheduled
+                            ? 'border-[#e2e5da] text-[#ccc] cursor-not-allowed opacity-50'
+                            : isCompleting
+                            ? 'border-[#4A7C59]/50 text-[#4A7C59]/50 animate-pulse'
+                            : 'border-[#4A7C59]/40 text-[#4A7C59] hover:border-[#4A7C59] hover:bg-[#4A7C59]/10'
+                        }`}
+                        aria-label={
+                          isCompletedToday
+                            ? `${habit.name} completed today`
+                            : !isScheduled
+                            ? `${habit.name} is not scheduled today`
+                            : `Complete ${habit.name}`
+                        }
+                        title={
+                          isCompletedToday
+                            ? 'Already completed today'
+                            : !isScheduled
+                            ? 'Not scheduled today'
+                            : 'Mark as complete'
+                        }
+                      >
+                        {isCompletedToday ? (
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        )}
+                      </button>
+
                       {/* Growth stage indicator */}
-                      <span className="text-xl flex-shrink-0" aria-label={`Growth stage: ${stage}`}>
+                      <span
+                        className={`text-xl flex-shrink-0 transition-transform ${
+                          showSuccess ? 'scale-125' : ''
+                        }`}
+                        aria-label={`Growth stage: ${stage}`}
+                      >
                         {STAGE_ICONS[stage]}
                       </span>
                       <div className="min-w-0">
@@ -137,9 +246,14 @@ export function HabitList({ habits, completedToday = [] }: HabitListProps) {
                           {isCompletedToday && (
                             <span className="text-xs text-[#4A7C59] font-medium">✓ Done</span>
                           )}
+                          {showSuccess && (
+                            <span className="text-xs text-[#4A7C59] font-medium animate-bounce">
+                              🌱 +1
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-[#6b7a6b] mt-0.5">
-                          {formatSchedule(habit)} · Streak: {habit.current_streak}
+                          {formatSchedule(habit)} · 🔥 Streak: {displayStreak}
                         </p>
                       </div>
                     </div>
